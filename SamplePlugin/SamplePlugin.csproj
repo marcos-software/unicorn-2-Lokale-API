@@ -31,9 +31,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Interface, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\Eigene Dateien\Eigene Dokumente\Visual Studio 2012\Projects\Unicorn 2\Interface\bin\Debug\Interface.dll</HintPath>
+    <Reference Include="Interface">
+      <HintPath>..\..\..\..\..\..\Eigene Dateien\Eigene Dokumente\Visual Studio 2012\Projects\Unicorn 2\Interface\bin\Release\Interface.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />

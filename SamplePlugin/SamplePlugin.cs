@@ -2,19 +2,19 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using Unicorn2.Interface;
+using Unicorn2.Interface.Exceptions;
 
-namespace SamplePlugin
+namespace Unicorn2.Marketplace.Api.Lokal.Sample.Standard
 {
-    [Export(typeof (IPlugin))]
+    [Export(typeof(IPlugin))]
     public class SamplePlugin : IPlugin
     {
         private Access access;
 
         #region Plugininformation
-
         public string Author
         {
-            get { return @"marcos-software"; } //necessary, must not be empty! max 72 chars, allowed chars: a-z, A-Z, 0-9, -, _
+            get { return @"marcos-software"; } /* necessary, must not be empty! max 72 chars, allowed chars: a-z, A-Z, 0-9, -, _ */
         }
 
         public string Version
@@ -24,13 +24,11 @@ namespace SamplePlugin
 
         public string Name
         {
-            get { return @"SamplePlugin"; } //necessary, must not be empty! max 72 chars, allowed chars: a-z, A-Z, 0-9, -, _
+            get { return @"SamplePlugin"; } /* necessary, must not be empty! max 72 chars, allowed chars: a-z, A-Z, 0-9, -, _ */
         }
-
         #endregion
 
-        #region Access (Keys, Licence, Install)
-
+        #region Access (Keys, Licence, Install, Features)
         public void SetAccess(Access iAccess)
         {
             access = iAccess;
@@ -47,169 +45,647 @@ namespace SamplePlugin
             /* tell us, whitch variables do you need und how we should name it in the gui */
             Access acces = new Access();
 
-            acces.Variables.Add("Api Key", new Var { Type = GUIType.Text});
+            acces.Variables.Add("Api Key", new Var { Type = GUIType.Text });
             acces.Variables.Add("Merchant ID", new Var { Type = GUIType.Text });
-            acces.Variables.Add("Method", new Var { Type = GUIType.Dropdown, DropdownValues = new List<String> {"cURL", "XML"}});
-            acces.Variables.Add("ShowAGB", new Var { Type = GUIType.Checkbox});
+            acces.Variables.Add("Method", new Var { Type = GUIType.Dropdown, DropdownValues = new List<String> { "cURL", "XML" } });
+            acces.Variables.Add("ShowAGB", new Var { Type = GUIType.Checkbox });
 
             return acces;
-            /* you can reach your filled variables by 
-             * access.Variables["Api Key"].Value      
-             */
+            /* you can get your user-filled-variables with access.Variables["Api Key"].Value */
         }
 
+        public List<Features> SupportedFeatures
+        {
+            get
+            {
+                return new List<Features>
+                {
+                    Features.Bilder,
+                    Features.Erscheinungsdatum,
+                    Features.NativeVako,
+                    Features.SupportsHtml,
+                    Features.TeilVersand,
+                    Features.VakoBilder,
+                    Features.Versandklassen
+                };
+            }
+        }
         #endregion
 
         #region Versandklassen
-
         public List<string> GetVersandklassen()
         {
-            List<string> versandklassen = new List<string>
+            return new List<string>
             {
                 "Paket National",
                 "Paket International",
                 "Kurier"
             };
-
-            return versandklassen;
         }
-
         #endregion
 
         #region Artikel
-
-        public List<Artikel> AddArtikel(List<Artikel> artikelList)
+        public void AddArtikel(List<ResultTask<Artikel>> artikelList)
         {
-            foreach (Artikel artikel in artikelList)
+            foreach (ResultTask<Artikel> task in artikelList)
             {
-                /* add article to your marketplace:
-                 * if it fails set Success to false
-                 * else set Success to true and store the returned ID in PluginId
-                 */
+                Artikel artikel = task.Item;
+                Boolean success = true;
 
-                artikel.Success = true;
-                artikel.PluginId = "yourArticleIdOnMarketplace_" + (new Random().Next(1000, 9999));
-
-                foreach (VakoArtikel vakoArtikel in artikel.VakoArtikel)
+                if (success)
                 {
-                    foreach (WertEigenschaft eigenschaft in vakoArtikel.Eigenschaften)
+                    task.OnSuccess("yourArticleIdOnMarketplace_" + (new Random().Next(1000, 9999)));
+                }
+                else
+                {
+                    /* Example how to handle errors */
+                    List<ItemError> errorList = new List<ItemError>
                     {
-                        /* add variation of this article to your marketplace:
-                         * store the returned ID in PluginId
-                         */
-                    }
+                        ItemError.Artikel.Allgemeines.ArtNoIsNotUnique,
+                        ItemError.Artikel.Allgemeines.EanNotValid,
+                        ItemError.Artikel.Allgemeines.ArticleNotSellable,
+                        ItemError.Sonstiges.Authentifizierung.MerchantHasntRights
+                    };
 
-                    vakoArtikel.PluginId = "yourVariationIdOnMarketplace_" + (new Random().Next(1000, 9999));
+                    task.OnError(errorList);
                 }
             }
-            return artikelList;
         }
 
-        public List<Artikel> SetArtikel(List<Artikel> artikelList)
+        public void SetArtikel(List<ResultTask<Artikel>> artikelList)
         {
-            foreach (Artikel artikel in artikelList)
+            foreach (ResultTask<Artikel> task in artikelList)
             {
-                /* update article in your marketplace:
-                 * if it fails set Success to false
-                 * else set Success to true
-                 * you can identify the artikel by ShopId
-                 */
+                Artikel artikel = task.Item;
+                Boolean success = true;
 
-                artikel.Success = true;
+                /* you can identify the article with artikel.ShopId */
+
+                if (success)
+                {
+                    task.OnSuccess(null);
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
             }
-            return artikelList;
         }
 
-        public List<Artikel> DeleteArtikel(List<Artikel> artikelList)
+        public void DeleteArtikel(List<ResultTask<Artikel>> artikelList)
         {
-            foreach (Artikel artikel in artikelList)
+            foreach (ResultTask<Artikel> task in artikelList)
             {
-                /* delete article in your marketplace:
-                 * if it fails set Success to false
-                 * else set Success to true
-                 * you can identify the artikel by ShopId
-                 */
+                Artikel artikel = task.Item;
+                Boolean success = true;
 
-                artikel.Success = true;
+                /* you can identify the article with artikel.ShopId */
+
+                if (success)
+                {
+                    task.OnSuccess(null);
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
             }
-            return artikelList;
+        }
+        #endregion
+
+        #region Crossselling
+        public void AddCrossselling(Artikel artikel, List<ResultTask<Artikel>> artikelList)
+        {
+            foreach (ResultTask<Artikel> task in artikelList)
+            {
+                Artikel crossSellingArtikel = task.Item;
+                Boolean success = true;
+
+                /* artikel = article to add crossselling to
+                    * crossSellingArtikel = article to connect with
+                    */
+
+                if (success)
+                {
+                    task.OnSuccess("yourCrossSellingIdOnMarketplace_" + (new Random().Next(1000, 9999)));
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
+            }
         }
 
+        public void DeleteCrossselling(Artikel artikel, List<ResultTask<Artikel>> artikelList)
+        {
+            foreach (ResultTask<Artikel> task in artikelList)
+            {
+                Artikel crossSellingArtikel = task.Item;
+                Boolean success = true;
+
+                /* artikel = article to remove crossselling from
+                    * crossSellingArtikel = article to disconnect to
+                    * you can identify the crossselling with crossSellingArtikel.ShopId
+                    */
+
+                if (success)
+                {
+                    task.OnSuccess(null);
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
+            }
+        }
+        #endregion
+
+        #region ArtikelAttribut
+        public void AddArtikelAttribut(Artikel artikel, List<ResultTask<ArtikelAttribut>> attributList)
+        {
+            foreach (ResultTask<ArtikelAttribut> task in attributList)
+            {
+                ArtikelAttribut artikelAttribut = task.Item;
+                Boolean success = true;
+
+                /* artikel = article to add attribut to */
+
+                if (success)
+                {
+                    task.OnSuccess("yourAttributIdOnMarketplace_" + (new Random().Next(1000, 9999)));
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
+            }
+        }
+
+        public void SetArtikelAttribut(Artikel artikel, List<ResultTask<ArtikelAttribut>> attributList)
+        {
+            foreach (ResultTask<ArtikelAttribut> task in attributList)
+            {
+                ArtikelAttribut artikelAttribut = task.Item;
+                Boolean success = true;
+
+                /* you can identify the Artikelattribut with artikelAttribut.ShopId */
+
+                if (success)
+                {
+                    task.OnSuccess(null);
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
+            }
+        }
+
+        public void DeleteArtikelAttribut(Artikel artikel, List<ResultTask<ArtikelAttribut>> attributList)
+        {
+            foreach (ResultTask<ArtikelAttribut> task in attributList)
+            {
+                ArtikelAttribut artikelAttribut = task.Item;
+                Boolean success = true;
+
+                /* you can identify the Artikelattribut with artikelAttribut.ShopId */
+
+                if (success)
+                {
+                    task.OnSuccess(null);
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
+            }
+        }
+        #endregion
+
+        #region ArtikelBild
+        public void AddArtikelBild(Artikel artikel, List<ResultTask<ArtikelBild>> artikelBildList)
+        {
+            foreach (ResultTask<ArtikelBild> task in artikelBildList)
+            {
+                ArtikelBild artikelBild = task.Item;
+                Boolean success = true;
+
+                /* artikel = article to add the picture to */
+
+                if (success)
+                {
+                    task.OnSuccess("yourPictureIdOnMarketplace_" + (new Random().Next(1000, 9999)));
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
+            }
+        }
+
+        public void SetArtikelBild(Artikel artikel, List<ResultTask<ArtikelBild>> artikelBildList)
+        {
+            foreach (ResultTask<ArtikelBild> task in artikelBildList)
+            {
+                ArtikelBild artikelBild = task.Item;
+                Boolean success = true;
+
+                /* you can identify the ArtikelBild with artikelBild.ShopId */
+
+                if (success)
+                {
+                    task.OnSuccess(null);
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
+            }
+        }
+
+        public void DeleteArtikelBild(Artikel artikel, List<ResultTask<ArtikelBild>> artikelBildList)
+        {
+            foreach (ResultTask<ArtikelBild> task in artikelBildList)
+            {
+                ArtikelBild artikelBild = task.Item;
+                Boolean success = true;
+
+                /* you can identify the ArtikelBild with artikelBild.ShopId */
+
+                if (success)
+                {
+                    task.OnSuccess(null);
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
+            }
+        }
+        #endregion
+
+        #region Vako
+        public void AddVako(Artikel artikel, List<ResultTask<VakoArtikel>> vakoArtikelList)
+        {
+            foreach (ResultTask<VakoArtikel> task in vakoArtikelList)
+            {
+                VakoArtikel vakoArtikel = task.Item;
+                Boolean success = true;
+
+                /* artikel = article to add the vakoartikel to */
+
+                if (success)
+                {
+                    task.OnSuccess("yourVakoIdOnMarketplace_" + (new Random().Next(1000, 9999)));
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
+            }
+        }
+
+        public void SetVako(Artikel artikel, List<ResultTask<VakoArtikel>> vakoArtikelList)
+        {
+            foreach (ResultTask<VakoArtikel> task in vakoArtikelList)
+            {
+                VakoArtikel vakoArtikel = task.Item;
+                Boolean success = true;
+
+                /* you can identify the VakoArtikel with vakoArtikel.ShopId */
+
+                if (success)
+                {
+                    task.OnSuccess(null);
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
+            }
+        }
+
+        public void DeleteVako(Artikel artikel, List<ResultTask<VakoArtikel>> vakoArtikelList)
+        {
+            foreach (ResultTask<VakoArtikel> task in vakoArtikelList)
+            {
+                VakoArtikel vakoArtikel = task.Item;
+                Boolean success = true;
+
+                /* you can identify the VakoArtikel with vakoArtikel.ShopId */
+
+                if (success)
+                {
+                    task.OnSuccess(null);
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
+            }
+        }
+        #endregion
+
+        #region VakoBild
+        public void AddVakoBild(Artikel artikel, VakoArtikel vakoArtikel, List<ResultTask<ArtikelBild>> artikelBildList)
+        {
+            foreach (ResultTask<ArtikelBild> task in artikelBildList)
+            {
+                ArtikelBild artikelBild = task.Item;
+                Boolean success = true;
+
+                /* vakoArtikel = VakoArtikel to add the artikelBild to
+                    * artikel = Artikel the vako is from */
+
+                if (success)
+                {
+                    task.OnSuccess("yourVakoBildIdOnMarketplace_" + (new Random().Next(1000, 9999)));
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
+            }
+        }
+
+        public void SetVakoBild(Artikel artikel, VakoArtikel vakoArtikel, List<ResultTask<ArtikelBild>> artikelBildList)
+        {
+            foreach (ResultTask<ArtikelBild> task in artikelBildList)
+            {
+                ArtikelBild artikelBild = task.Item;
+                Boolean success = true;
+
+                /* you can identify the ArtikelBild with artikelBild.ShopId */
+
+                if (success)
+                {
+                    task.OnSuccess(null);
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
+            }
+        }
+
+        public void DeleteVakoBild(Artikel artikel, VakoArtikel vakoArtikel, List<ResultTask<ArtikelBild>> artikelBildList)
+        {
+            foreach (ResultTask<ArtikelBild> task in artikelBildList)
+            {
+                ArtikelBild artikelBild = task.Item;
+                Boolean success = true;
+
+                /* you can identify the ArtikelBild with artikelBild.ShopId */
+
+                if (success)
+                {
+                    task.OnSuccess(null);
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
+            }
+        }
         #endregion
 
         #region Kategorien
-
-        public List<Kategorie> AddKategorie(List<Kategorie> kategorieList)
+        public void AddKategorie(List<ResultTask<Kategorie>> kategorieList)
         {
-            foreach (Kategorie kategorie in kategorieList)
+            foreach (ResultTask<Kategorie> task in kategorieList)
             {
-                /* add category to your marketplace:
-                 * if it fails set Success to false
-                 * else set Success to true and store the returned ID in PluginId
-                 */
+                Kategorie kategorie = task.Item;
+                Boolean success = true;
 
-                kategorie.Success = true;
-                kategorie.PluginId = "yourCategoryIdOnMarketplace_" + (new Random().Next(1000, 9999));
+                if (success)
+                {
+                    task.OnSuccess("yourCategoryIdOnMarketplace_" + (new Random().Next(1000, 9999)));
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
             }
-            return kategorieList;
         }
 
-        public List<Kategorie> SetKategorie(List<Kategorie> kategorieList)
+        public void SetKategorie(List<ResultTask<Kategorie>> kategorieList)
         {
-            foreach (Kategorie kategorie in kategorieList)
+            foreach (ResultTask<Kategorie> task in kategorieList)
             {
-                /* update category in your marketplace:
-                 * if it fails set Success to false
-                 * else set Success to true
-                 * you can identify the kategorie by ShopId
-                 */
+                Kategorie kategorie = task.Item;
+                Boolean success = true;
 
-                kategorie.Success = true;
+                /* you can identify the category with kategorie.ShopId */
+
+                if (success)
+                {
+                    task.OnSuccess(null);
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
             }
-            return kategorieList;
         }
 
-        public List<Kategorie> DeleteKategorie(List<Kategorie> kategorieList)
+        public void DeleteKategorie(List<ResultTask<Kategorie>> kategorieList)
         {
-            foreach (Kategorie kategorie in kategorieList)
+            foreach (ResultTask<Kategorie> task in kategorieList)
             {
-                /* delete category in your marketplace:
-                 * if it fails set Success to false
-                 * else set Success to true
-                 * you can identify the kategorie by ShopId
-                 */
+                Kategorie kategorie = task.Item;
+                Boolean success = true;
 
-                kategorie.Success = true;
+                /* you can identify the category with kategorie.ShopId */
+
+                if (success)
+                {
+                    task.OnSuccess(null);
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
             }
-            return kategorieList;
         }
 
+        public List<Kategorie> GetKategorie()
+        {
+            /* return a List<Kategorie> with all shopcategories of the merchant */
+            List<Kategorie> shopCategories = new List<Kategorie>();
+            return shopCategories;
+        }
+        #endregion
+
+        #region KategorieLink
+        public void AddKategorieLink(Artikel artikel, List<ResultTask<Kategorie>> kategorieList)
+        {
+            foreach (ResultTask<Kategorie> task in kategorieList)
+            {
+                Kategorie kategorie = task.Item;
+                Boolean success = true;
+
+                /* artikel = Artikel to link the kategorie with */
+
+                if (success)
+                {
+                    task.OnSuccess("yourLinkIdOnMarketplace_" + (new Random().Next(1000, 9999)));
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
+            }
+        }
+
+        public void DeleteKategorieLink(Artikel artikel, List<ResultTask<Kategorie>> kategorieList)
+        {
+            foreach (ResultTask<Kategorie> task in kategorieList)
+            {
+                Kategorie kategorie = task.Item;
+                Boolean success = false;
+
+                /* artikel = Artikel to delete the kategorie link */
+
+                if (success)
+                {
+                    task.OnSuccess(null);
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
+            }
+        }
         #endregion
 
         #region Bestellungen
-
         public List<Bestellung> GetBestellungen(Bestellstate state, DateTime startdate)
         {
             List<Bestellung> bestellungen = new List<Bestellung>();
 
             /*
-             * get orders, specified by following options
-             * - state     == Bestellstate.Open       <= get open orders     (all orders that are not sent and not cancelled)
-             * - state     == Bestellstate.Editable   <= get editable orders (if your marketplace separates between pending and editable orders, get all editable orders (without the pendings))     
-             * - startdate == get orders with state option and date between startdate und now  
-             * 
-             * store the orders in bestellungen
-             *
-             * --------------
-             * e.g.:
-             *              
-             * foreach(MarketplaceOrder marketplaceOrder in getMarketplaceOrders(state, startdate))
-             * {
-             *      Bestellung bestellung = new Bestellung();
-             *      ...
-             *      bestellungen.Add(bestellung);
-             * }              
-             */
+                * get orders, specified by following options
+                * - state     == Bestellstate.Open       <= get open orders     (all orders that are not sent and not cancelled)
+                * - state     == Bestellstate.Editable   <= get editable orders (if your marketplace separates between pending and editable orders, get all editable orders (without the pendings))     
+                * - startdate == get orders with state option and date between startdate und now  
+                * 
+                * store the orders in bestellungen
+                *
+                * --------------
+                * e.g.:
+                *              
+                * foreach(MarketplaceOrder marketplaceOrder in getMarketplaceOrders(state, startdate))
+                * {
+                *      Bestellung bestellung = new Bestellung();
+                *      ...
+                *      bestellungen.Add(bestellung);
+                * }              
+                */
 
             bestellungen.Add(new Bestellung
             {
@@ -279,71 +755,71 @@ namespace SamplePlugin
                 },
 
                 Gutscheine = new List<Gutschein>
+            {
+                new Gutschein
                 {
-                    new Gutschein
-                    {
-                        GutscheinNummer = "sampleCouponId_" + (new Random().Next(1000, 9999)),
-                        Rabatt = 9.99,
-                        Code = "sampleCouponCode_" + (new Random().Next(1000, 9999)),
-                        Bemerkung = "unicorn 2 is great - coupon!"
-                    }
-                },
+                    GutscheinNummer = "sampleCouponId_" + (new Random().Next(1000, 9999)),
+                    Rabatt = 9.99,
+                    Code = "sampleCouponCode_" + (new Random().Next(1000, 9999)),
+                    Bemerkung = "unicorn 2 is great - coupon!"
+                }
+            },
 
                 Artikel = new List<Artikel>
+            {
+                new Artikel
                 {
-                    new Artikel
-                    {
-                        ShopId = "yourArticleIdOnMarketplace_1", // the returned articleId from function AddArtikel(List<Artikel> artikelList) 
-                        ArtikelNummer = "productArtNo_1",
-                        Name = "sampleProduct_1",
-                        Hinweis = "with gift package",
-                        Menge = 2,
-                        Preis = 2.69, // Brutto (with tax included)
-                        GesammtPreis = 5.38,
-                        MwSt = Steuer.MwSt7
-                    },
+                    ShopId = "yourArticleIdOnMarketplace_1", // the returned articleId from function AddArtikel(List<Artikel> artikelList) 
+                    ArtikelNummer = "productArtNo_1",
+                    Name = "sampleProduct_1",
+                    Hinweis = "with gift package",
+                    Menge = 2,
+                    Preis = 2.69, // Brutto (with tax included)
+                    GesammtPreis = 5.38,
+                    MwSt = Steuer.MwSt7
+                },
 
-                    new Artikel
-                    {
-                        ShopId = "yourArticleIdOnMarketplace_2",
-                        ArtikelNummer = "productArtNo_2",
-                        Name = "sampleProduct_2 with variations Color: blue Size: XXL",
-                        Menge = 1,
-                        Preis = 8.99,
-                        GesammtPreis = 8.99,
-                        MwSt = Steuer.MwSt19,
+                new Artikel
+                {
+                    ShopId = "yourArticleIdOnMarketplace_2",
+                    ArtikelNummer = "productArtNo_2",
+                    Name = "sampleProduct_2 with variations Color: blue Size: XXL",
+                    Menge = 1,
+                    Preis = 8.99,
+                    GesammtPreis = 8.99,
+                    MwSt = Steuer.MwSt19,
 
-                        VakoArtikel = new List<VakoArtikel>
+                    VakoArtikel = new List<VakoArtikel>
+                    {
+                        new VakoArtikel
                         {
-                            new VakoArtikel
+                            ShopId = "yourVariationIdOnMarketplace", // the returned variantId from function addArticle($article) on adding this explicit variation 
+                            Eigenschaften = new List<WertEigenschaft>
                             {
-                                ShopId = "yourVariationIdOnMarketplace", // the returned variantId from function addArticle($article) on adding this explicit variation 
-                                Eigenschaften = new List<WertEigenschaft>
+                                new WertEigenschaft
                                 {
-                                    new WertEigenschaft
+                                    Name = "Color",
+                                    Wert = new Eigenschaftswert
                                     {
-                                        Name = "Color",
-                                        Wert = new Eigenschaftswert
-                                        {
-                                            Wert = "blue",
-                                            Aktiv = true
-                                        }
-                                    },
+                                        Wert = "blue",
+                                        Aktiv = true
+                                    }
+                                },
 
-                                    new WertEigenschaft
+                                new WertEigenschaft
+                                {
+                                    Name = "Size",
+                                    Wert = new Eigenschaftswert
                                     {
-                                        Name = "Size",
-                                        Wert = new Eigenschaftswert
-                                        {
-                                            Wert = "XXL",
-                                            Aktiv = true
-                                        }
+                                        Wert = "XXL",
+                                        Aktiv = true
                                     }
                                 }
                             }
                         }
                     }
                 }
+            }
             });
 
             bestellungen.Add(new Bestellung
@@ -382,7 +858,7 @@ namespace SamplePlugin
                     Nachname = "Nym",
                     Geschlecht = Geschlecht.Männlich,
                     Email = "arno.nym@mail.de_" + (new Random().Next(1000, 9999)),
-   
+
                     Adresse = new Adresse
                     {
                         Straße = "Am geheimen Weg",
@@ -395,86 +871,124 @@ namespace SamplePlugin
                 },
 
                 Artikel = new List<Artikel>
+            {
+                new Artikel
                 {
-                    new Artikel
-                    {
-                        ShopId = "yourArticleIdOnMarketplace_1_2",
-                        ArtikelNummer = "productArtNo_1_2",
-                        Name = "sampleProduct_1_2",
-                        Hinweis = "with gift package",
-                        Menge = 4,
-                        Preis = 4.99,
-                        GesammtPreis = 19.96,
-                        MwSt = Steuer.MwSt10P7
-                    }
+                    ShopId = "yourArticleIdOnMarketplace_1_2",
+                    ArtikelNummer = "productArtNo_1_2",
+                    Name = "sampleProduct_1_2",
+                    Hinweis = "with gift package",
+                    Menge = 4,
+                    Preis = 4.99,
+                    GesammtPreis = 19.96,
+                    MwSt = Steuer.MwSt10P7
                 }
+            }
             });
 
             return bestellungen;
         }
 
-        public List<BestellVersandInfo> SetVersendet(List<BestellVersandInfo> sendings)
+        public void SetVersendet(List<ResultTask<BestellVersandInfo, VersandInfo, List<ItemError>>> infos)
         {
-            foreach (BestellVersandInfo sending in sendings)
+            /* für jede Bestellung */
+            foreach (ResultTask<BestellVersandInfo, VersandInfo, List<ItemError>> task in infos)
             {
-                /* set order sending to your marketplace:
-                 * if it fails set Success to false
-                 * else set Success to true
-                 * you can identify the order by sending.Bestellung.ShopId
-                 */
+                BestellVersandInfo bestellVersandInfo = task.Item;
 
-                sending.Success = true;
+                /* für jeden lieferschein */
+                foreach (LieferscheinVersandInfo lieferscheinVersandInfo in bestellVersandInfo.LieferscheinVersandInfos)
+                {
+                    /* für jedes paket */
+                    foreach (VersandInfo versandInfo in lieferscheinVersandInfo.VersandInfos)
+                    {
+                        String BestellNr = bestellVersandInfo.Bestellung.ShopId;
+                        Boolean success = true;
+
+                        if (success)
+                        {
+                            task.OnSuccess(versandInfo);
+                        }
+                        else
+                        {
+                            List<ItemError> errorList = new List<ItemError>
+                            {
+                                /* Add your errors here */
+                            };
+
+                            task.OnError(errorList);
+                        }
+                    }
+                }
             }
-            return sendings;
         }
 
-        public List<BestellVersandInfo> SetBezahlt(List<BestellVersandInfo> payments)
+        public void SetBezahlt(List<ResultTask<BestellungsInfo>> infos)
         {
-            foreach (BestellVersandInfo payment in payments)
+            foreach (ResultTask<BestellungsInfo> task in infos)
             {
-                /* set order payment to your marketplace:
-                 * if it fails set Success to false
-                 * else set Success to true
-                 * you can identify the order by payment.Bestellung.ShopId
-                 */
+                BestellungsInfo info = task.Item;
+                String BestellNr = info.Bestellung.ShopId;
+                Boolean success = true;
 
-                payment.Success = true;
+                if (success)
+                {
+                    task.OnSuccess(null);
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
             }
-            return payments;
         }
 
-        public List<Storno> SetStorno(List<Storno> cancellations)
+        public void SetStorno(List<ResultTask<Storno>> infos)
         {
-            foreach (Storno cancellation in cancellations)
+            foreach (ResultTask<Storno> task in infos)
             {
-                /* set order cancellation to your marketplace:
-                 * if it fails set Success to false
-                 * else set Success to true
-                 * you can identify the order by cancellation.Bestellung.ShopId
-                 */
+                Storno storno = task.Item;
+                String BestellNr = storno.Bestellung.ShopId;
+                Boolean success = true;
 
-                cancellation.Success = true;
+                if (success)
+                {
+                    task.OnSuccess(null);
+                }
+                else
+                {
+                    List<ItemError> errorList = new List<ItemError>
+                    {
+                        /* Add your errors here */
+                    };
+
+                    task.OnError(errorList);
+                }
             }
-            return cancellations;
         }
 
-        public List<Storno> GetStorno(DateTime startdate)
+        public List<Storno> GetStorno(int days)
         {
+            DateTime startdate = DateTime.Now.AddDays((days * -1));
             List<Storno> cancellations = new List<Storno>();
 
             /*
-             * get cancelled orders since startdate
-             * 
-             * store the orders in cancellations
-             *
-             * --------------
-             * e.g.:
-             *              
-             * foreach(MarketplaceOrder marketplaceOrder in getMarketplaceOrders(State.Cancelled, startdate))
-             * {
-             *      cancellations.Add(CreateStorno(marketplaceOrder.marketplaceId, marketplaceOrder.reason));
-             * }              
-             */
+                * get cancelled orders since startdate
+                * 
+                * store the orders in cancellations
+                *
+                * --------------
+                * e.g.:
+                *              
+                * foreach(MarketplaceOrder marketplaceOrder in getMarketplaceOrders(State.Cancelled, startdate))
+                * {
+                *      cancellations.Add(CreateStorno(marketplaceOrder.marketplaceId, marketplaceOrder.reason));
+                * }              
+                */
 
             cancellations.Add(CreateStorno("sampleOrderId_1", "Defekt (Beschädigt)"));
 
@@ -492,7 +1006,6 @@ namespace SamplePlugin
 
             return storno;
         }
-
         #endregion
     }
 }
