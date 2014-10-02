@@ -4,7 +4,7 @@ using System.ComponentModel.Composition;
 using Unicorn2.Interface;
 using Unicorn2.Interface.Exceptions;
 
-namespace Unicorn2.Marketplace.Api.Lokal.Sample.Standard
+namespace SamplePlugin
 {
     [Export(typeof(IPlugin))]
     public class SamplePlugin : IPlugin
